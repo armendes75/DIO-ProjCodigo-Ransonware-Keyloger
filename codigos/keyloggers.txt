@@ -1,0 +1,79 @@
+
+# Keylogger SIMULADO via GUI controlada (tkinter). Registra o texto digitado no widget para demo.
+
+import tkinter as tk
+from tkinter import scrolledtext
+import time, os
+
+BASE = os.path.expanduser('~/ransom_lab')
+LOG = os.path.join(BASE, 'logs', 'keylogger_gui.log')
+os.makedirs(os.path.join(BASE, 'logs'), exist_ok=True)
+
+def log_text(text):
+    with open(LOG, 'a', encoding='utf-8') as f:
+        f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {text}\n")
+
+def on_submit():
+    content = txt.get('1.0', tk.END).strip()
+    if content:
+        log_text(content)
+        lbl_status.config(text="Texto registrado com sucesso (simulado). Ver logs.")
+        txt.delete('1.0', tk.END)
+
+root = tk.Tk()
+root.title("Keylogger (SIMULADO) - Digite aqui para demo")
+root.geometry("600x400")
+
+lbl = tk.Label(root, text="Digite algo abaixo (somente dentro desta janela).")
+lbl.pack()
+txt = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=70, height=15)
+txt.pack(padx=10, pady=10)
+
+btn = tk.Button(root, text="Registrar (simulado)", command=on_submit)
+btn.pack()
+lbl_status = tk.Label(root, text="")
+lbl_status.pack()
+
+root.mainloop()
+
+
+
+# Lê 'simulated_keys.txt' (contém as teclas capturadas) e envia por SMTP para servidor local de debug.
+
+import smtplib, os
+
+BASE = os.path.expanduser('~/ransom_lab')
+LOG = os.path.join(BASE, 'logs', 'keylogger_file.log')
+SIM_FILE = os.path.join(BASE, 'simulated_keys.txt')
+os.makedirs(os.path.dirname(LOG), exist_ok=True)
+
+# Configure para enviar ao servidor SMTP local de debug (veja instruções no repo)
+SMTP_HOST = 'localhost'
+SMTP_PORT = 1025
+FROM = 'simulator@lab.local'
+TO = 'recipient@lab.local'
+
+if not os.path.exists(SIM_FILE):
+    with open(SIM_FILE, 'w', encoding='utf-8') as f:
+        f.write("Exemplo de texto capturado (simulado).\n")
+
+with open(SIM_FILE, 'r', encoding='utf-8') as f:
+    body = f.read()
+
+message = f"From: {FROM}\nTo: {TO}\nSubject: Simulated Keylog\n\n{body}"
+
+# Envio para servidor de debug local (não entrega para fora)
+try:
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
+        s.sendmail(FROM, [TO], message)
+    print("Envio simulado realizado ao servidor de debug local.")
+    with open(LOG, 'a', encoding='utf-8') as lg:
+        lg.write("Envio simulado realizado.\n")
+except Exception as e:
+    print("Falha no envio (esperado se servidor debug não estiver rodando):", e)
+
+
+python3 -m smtpd -c DebuggingServer -n localhost:1025
+
+
+

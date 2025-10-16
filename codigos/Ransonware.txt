@@ -1,0 +1,91 @@
+# Cria arquivos de teste e cópias de backup
+
+import os, random, string, shutil
+
+BASE = os.path.expanduser('~/ransom_lab')
+TARGETS = os.path.join(BASE, 'targets')
+BACKUPS = os.path.join(BASE, 'backups')
+LOGS = os.path.join(BASE, 'logs')
+os.makedirs(TARGETS, exist_ok=True)
+os.makedirs(BACKUPS, exist_ok=True)
+os.makedirs(LOGS, exist_ok=True)
+
+def random_text(n=256):
+    return ''.join(random.choices(string.ascii_letters + string.digits + ' ', k=n))
+
+for i in range(1, 31):
+    fname = f'file_{i}.txt'
+    path = os.path.join(TARGETS, fname)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(random_text(512))
+    shutil.copy2(path, os.path.join(BACKUPS, fname))
+
+print("Arquivos de teste criados em:", TARGETS)
+print("Backups em:", BACKUPS)
+
+
+
+
+# Simula ransomware: renomeia e substitui conteúdo por marcador; usa backups para restauração posterior.
+
+import os, time, shutil
+
+BASE = os.path.expanduser('~/ransom_lab')
+TARGETS = os.path.join(BASE, 'targets')
+BACKUPS = os.path.join(BASE, 'backups')
+LOG = os.path.join(BASE, 'logs', 'simulate_ransom.log')
+RESCUE_NOTE = os.path.join(TARGETS, 'README_RESCUE.txt')
+
+os.makedirs(os.path.join(BASE, 'logs'), exist_ok=True)
+
+def log(msg):
+    with open(LOG, 'a', encoding='utf-8') as f:
+        f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {msg}\n")
+
+# Operação segura: substitui conteúdo com marcador e renomeia para .encsim
+for fname in os.listdir(TARGETS):
+    path = os.path.join(TARGETS, fname)
+    if not os.path.isfile(path):
+        continue
+    if fname.endswith('.encsim') or fname == 'README_RESCUE.txt':
+        continue
+    # sobrescreve com marcador
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write("FILE ENCRYPTED (SIMULADO). Este é um simulado para fins educacionais.\n")
+    newname = fname + '.encsim'
+    newpath = os.path.join(TARGETS, newname)
+    os.rename(path, newpath)
+    log(f"Simulado: {fname} -> {newname}")
+
+# Cria nota de resgate educativa
+with open(RESCUE_NOTE, 'w', encoding='utf-8') as r:
+    r.write("Sua máquina foi afetada (simulação). Para recuperar, execute restore_from_backups.py\n")
+log("Mensagem de resgate criada.")
+print("Simulação concluída. Logs em:", LOG)
+
+
+
+
+# Restaura arquivos a partir da pasta backups
+
+import os, shutil
+
+BASE = os.path.expanduser('~/ransom_lab')
+TARGETS = os.path.join(BASE, 'targets')
+BACKUPS = os.path.join(BASE, 'backups')
+
+# Restaura each backup file into targets, remove *.encsim
+for b in os.listdir(BACKUPS):
+    src = os.path.join(BACKUPS, b)
+    dst = os.path.join(TARGETS, b)
+    shutil.copy2(src, dst)
+
+# Remove arquivos .encsim e nota de resgate
+for f in os.listdir(TARGETS):
+    if f.endswith('.encsim') or f == 'README_RESCUE.txt':
+        try:
+            os.remove(os.path.join(TARGETS, f))
+        except OSError:
+            pass
+
+print("Restauração completa. Confira:", TARGETS)
